@@ -3,13 +3,21 @@ resources:
   type: git
   source:
     uri: https://github.com/making/jmeter-on-concourse.git
-
+- name: cf
+  type: cf
+  source:
+    api: ((cf-api))
+    username: ((cf-username))
+    password: ((cf-password))
+    organization: ((cf-org))
+    space: ((cf-space))
+    skip_cert_check: true
 jobs:
 - name: perf-test
   plan:
   - get: repo
   - task: run-jmeter
-    env:
+    params:
       DOMAIN: welcome-cf.cfapps.io
       PORT: 443
       PROTOCOL: https
@@ -48,12 +56,9 @@ jobs:
           cat ./jmeter.log
 
           echo "==== Raw Test Report ===="
-          cat ./load-gen.jtl
-
-          echo "==== HTML Test Report ===="
-          cat ../report/index.html
-  # - put: cf
-  #   params:
-  #     manifest: repo/manifest.yml
-  #     path: report
-  #     current_app_name: demo-jemeter-report
+          cat ./test.jtl
+  - put: cf
+    params:
+      manifest: repo/manifest.yml
+      path: report
+      current_app_name: demo-jemeter-report

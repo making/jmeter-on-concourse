@@ -1,0 +1,7 @@
+applications:
+- name: demo-jemeter-report
+  buildpack: staticfile_buildpack
+  memory: 32M
+  disk_quota: 64M
+  env:
+    FORCE_HTTPS: true
