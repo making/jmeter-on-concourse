@@ -1,0 +1,59 @@
+resources:
+- name: repo
+  type: git
+  source:
+    uri: https://github.com/making/jmeter-on-concourse.git
+
+jobs:
+- name: perf-test
+  plan:
+  - get: repo
+  - task: run-jmeter
+    env:
+      DOMAIN: welcome-cf.cfapps.io
+      PORT: 443
+      PROTOCOL: https
+      LOOPS: 10
+      NUM_THREADS: 5
+      RAMP_TIME: 1
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: justb4/jmeter
+      inputs:
+      -  name: repo
+      outputs:
+      - name: report
+      run:
+        path: bash
+        args: 
+        - -c
+        - |
+          set -e
+          cd repo
+
+          jmeter -Dlog_level.jmeter=DEBUG \
+            -J DOMAIN=${DOMAIN} \
+            -J PORT=${PORT} \
+            -J PROTOCOL=${PROTOCOL} \
+            -J LOOPS=${LOOPS} \
+            -J NUM_THREADS=${NUM_THREADS} \
+            -J RAMP_TIME=${RAMP_TIME} \
+            -n -t test.jmx -l test.jtl -j jmeter.log \
+            -e -o ../report
+
+          echo "==== jmeter.log ===="
+          cat ./jmeter.log
+
+          echo "==== Raw Test Report ===="
+          cat ./load-gen.jtl
+
+          echo "==== HTML Test Report ===="
+          cat ../report/index.html
+  # - put: cf
+  #   params:
+  #     manifest: repo/manifest.yml
+  #     path: report
+  #     current_app_name: demo-jemeter-report
